@@ -196,67 +196,43 @@ async function handleDeleteByQuizId(req, res) {
   }
 }
 
-async function insertManyQuizs(req, res) {
+// Insert multiple questions
+const insertManyQuizs = async (req, res) => {
   try {
-    // Check if request body contains questions array
-    if (!req.body.questions || !Array.isArray(req.body.questions)) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide an array of questions",
-      });
-    }
-
-    // Validate each question before inserting
     const questions = req.body.questions;
 
-    // Insert multiple questions
-    const insertedQuestions = await Question.insertMany(questions, {
-      // This option returns validation errors instead of stopping at first error
-      ordered: false,
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Questions must be a non-empty array" });
+    }
+
+    // Add user ID if needed (e.g., from auth middleware)
+    const userId = req.user ? req.user._id : null;
+
+    // Attach user and validate each question manually
+    const questionsWithUser = questions.map((q) => ({
+      ...q,
+      user: q.user || userId,
+    }));
+
+    const insertedQuestions = await Question.insertMany(questionsWithUser, {
+      ordered: true,
     });
 
-    return res.status(201).json({
-      success: true,
-      count: insertedQuestions.length,
+    res.status(201).json({
+      message: `${insertedQuestions.length} question(s) inserted successfully`,
       data: insertedQuestions,
     });
   } catch (error) {
-    // Handle validation errors
-    if (error.name === "ValidationError") {
-      const messages = Object.values(error.errors).map((err) => err.message);
-      return res.status(400).json({
-        success: false,
-        errors: messages,
-      });
+    if (error.name === "ValidationError" || error.name === "BulkWriteError") {
+      return res
+        .status(400)
+        .json({ message: "Validation Error", error: error.message });
     }
-
-    // Handle other errors like duplicate keys
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Duplicate question(s) found",
-      });
-    }
-
-    // For bulk write errors (multiple validation issues)
-    if (error.name === "BulkWriteError") {
-      return res.status(400).json({
-        success: false,
-        message: "Error inserting questions",
-        errors: error.writeErrors.map((err) => err.errmsg),
-      });
-    }
-
-    // Generic server error
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
-}
-
-
+};
 
 module.exports = {
   createQuestion,

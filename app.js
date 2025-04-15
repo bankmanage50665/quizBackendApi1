@@ -12,6 +12,7 @@ dotenv.config();
 
 const quizRouter = require("./router/quizRouter");
 const userRouter = require("./router/userRouter");
+const save4laterRouter = require("./router/save4laterRouter");
 
 const url = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_USER_PASSWORD}@cluster0.wdrbduw.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -27,6 +28,13 @@ app.use(
 
 app.use("/api/quiz", quizRouter);
 app.use("/api/user", userRouter);
+app.use("/api/save", save4laterRouter);
+
+
+
+
+
+
 
 app.use("/uploads/images", express.static(path.join("uploads", "images")));
 

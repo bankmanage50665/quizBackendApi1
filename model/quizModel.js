@@ -37,6 +37,7 @@ const QuestionSchema = new mongoose.Schema({
       message: "Correct answer index must be valid",
     },
   },
+  user: { type: mongoose.Types.ObjectId, ref: "User" },
   createdAt: {
     type: Date,
     default: Date.now,
